@@ -30,3 +30,7 @@ import Testing
     #expect(HotKeyManager.action(forID: 0) == nil)
     #expect(HotKeyManager.action(forID: 6) == nil)
 }
+
+@Test func bindingsOrderMatchesActionCases() {
+    #expect(HotKeyManager.defaultBindings.map(\.action) == HotKeyAction.allCases)
+}
