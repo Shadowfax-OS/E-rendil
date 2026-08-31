@@ -6,9 +6,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let tracker = CursorTracker()
     private(set) var controller: OverlayController!
     private let hotKeys = HotKeyManager()
+    private var menuBar: MenuBarController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         controller = OverlayController(state: state, store: store, tracker: tracker)
+        menuBar = MenuBarController(state: state, store: store, controller: controller)
         controller.rebuildPanels()
 
         hotKeys.handler = { [weak self] action in
