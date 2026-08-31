@@ -10,6 +10,11 @@ final class AnnotationView: NSView {
     var isDrawModeActive = false {
         didSet {
             window?.invalidateCursorRects(for: self)
+            if !isDrawModeActive {
+                currentPoints = []
+                isRectMode = false
+                needsDisplay = true
+            }
         }
     }
 
@@ -40,6 +45,7 @@ final class AnnotationView: NSView {
     }
 
     override func keyDown(with event: NSEvent) {
+        guard isDrawModeActive else { super.keyDown(with: event); return }
         if event.keyCode == 53 { // ESC
             onEscape?()
         } else {
@@ -63,20 +69,20 @@ final class AnnotationView: NSView {
     override func mouseUp(with event: NSEvent) {
         guard isDrawModeActive, !currentPoints.isEmpty else { return }
         currentPoints.append(convert(event.locationInWindow, from: nil))
-        if let stroke = finishedStroke() {
+        if let stroke = buildStroke(from: currentPoints) {
             store.add(stroke, on: screenID)
         }
         currentPoints = []
         needsDisplay = true
     }
 
-    private func finishedStroke() -> Stroke? {
-        guard currentPoints.count > 1 else { return nil }
+    private func buildStroke(from points: [CGPoint]) -> Stroke? {
+        guard points.count > 1 else { return nil }
         if isRectMode {
-            return Stroke(kind: .markerRect(rect(from: currentPoints.first!, to: currentPoints.last!)),
+            return Stroke(kind: .markerRect(rect(from: points.first!, to: points.last!)),
                           colorName: state.colorName)
         }
-        return Stroke(kind: .freehand(currentPoints), colorName: state.colorName)
+        return Stroke(kind: .freehand(points), colorName: state.colorName)
     }
 
     private func rect(from a: CGPoint, to b: CGPoint) -> CGRect {
@@ -88,18 +94,9 @@ final class AnnotationView: NSView {
         for stroke in store.strokes(on: screenID) {
             render(stroke)
         }
-        if let inProgress = inProgressStroke() {
+        if let inProgress = buildStroke(from: currentPoints) {
             render(inProgress)
         }
-    }
-
-    private func inProgressStroke() -> Stroke? {
-        guard currentPoints.count > 1 else { return nil }
-        if isRectMode {
-            return Stroke(kind: .markerRect(rect(from: currentPoints.first!, to: currentPoints.last!)),
-                          colorName: state.colorName)
-        }
-        return Stroke(kind: .freehand(currentPoints), colorName: state.colorName)
     }
 
     private func render(_ stroke: Stroke) {
