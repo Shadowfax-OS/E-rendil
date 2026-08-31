@@ -1,12 +1,10 @@
 import Testing
 import AppKit
+import Foundation
 @testable import GlowCursor
 
 private func freshDefaults() -> UserDefaults {
-    let d = UserDefaults(suiteName: "GlowCursorTests")!
-    d.removePersistentDomain(forName: "GlowCursorTests")
-    d.synchronize()
-    return d
+    UserDefaults(suiteName: "GlowCursorTests.\(UUID().uuidString)")!
 }
 
 private final class Spy: EffectsStateDelegate {
