@@ -28,4 +28,4 @@ van dit type.
     Scripts/bundle.sh
 
 Resultaat: `build/GlowCursor.app`. Sleep naar /Applications.
-Ontwikkelen: `swift run` · Tests: `swift test`
+Ontwikkelen: `swift run` · Tests: `Scripts/test.sh`
