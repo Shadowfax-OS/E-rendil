@@ -14,7 +14,7 @@ Een gratis macOS-tool in de stijl van Pointerly/CursorPro voor **live presentati
 
 1. **Highlight-ring** — gekleurde cirkel/halo die de cursor permanent volgt.
 2. **Spotlight** — rest van het scherm gedimd; een heldere cirkel rond de cursor volgt de muis.
-3. **Marker-highlight** — in tekenmodus met ⇧+slepen een translucente marker-rechthoek trekken (multiply-blend voor echt markeerstift-effect).
+3. **Marker-highlight** — in tekenmodus met ⇧+slepen een translucente marker-rechthoek trekken (vulkleur met alpha ≈ 0,35; een echte multiply-blend met onderliggende schermcontent is onmogelijk zonder schermopname-permissie — de overlay kan alleen met zijn eigen vensterinhoud blenden).
 4. **Freehand tekenen** — in tekenmodus vrij tekenen (highlight-randen om schermelementen).
 5. **Undo laatste streek** en **alles wissen** via sneltoets.
 6. **Menubar-app** (geen dock-icoon) met menu: toggles, kleurkeuze, ringdiameter, dim-sterkte, wissen, afsluiten.
@@ -53,7 +53,7 @@ Eén borderless, transparante `NSPanel` per `NSScreen`:
 ### Renderlagen (per panel, van onder naar boven)
 
 1. **SpotlightLayer** — schermvullende zwarte `CALayer` (opacity instelbaar) met een `CAShapeLayer`-mask (even-odd pad met cirkelvormig gat rond de cursor).
-2. **AnnotationView** — `NSView` die freehand-strokes en marker-rechthoeken tekent met `NSBezierPath`; marker-rechthoeken met `NSCompositingOperation.multiply`.
+2. **AnnotationView** — `NSView` die freehand-strokes en marker-rechthoeken tekent met `NSBezierPath`; marker-rechthoeken als translucente vulling (alpha ≈ 0,35).
 3. **RingLayer** — `CAShapeLayer`-cirkel die de cursor volgt.
 
 Zo blijft de ring zichtbaar binnen het spotlight-gat en dimmen annotaties mee buiten het gat.
