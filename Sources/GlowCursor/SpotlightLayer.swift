@@ -18,6 +18,7 @@ final class SpotlightLayer: CALayer {
         super.init()
         backgroundColor = NSColor.black.cgColor
         maskShape.fillRule = .evenOdd
+        maskShape.contentsScale = contentsScale
         mask = maskShape
         updateOpacity()
     }

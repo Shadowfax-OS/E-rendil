@@ -15,6 +15,7 @@ final class OverlayController: NSObject {
     private let store: StrokeStore
     private let tracker: CursorTracker
     private var bundles: [PanelBundle] = []
+    private var didPushCrosshair = false
 
     init(state: EffectsState, store: StrokeStore, tracker: CursorTracker) {
         self.state = state
@@ -96,6 +97,15 @@ final class OverlayController: NSObject {
             b.ringHost.isHidden = !state.ringEnabled
             b.spotlightLayer.dimOpacity = state.dimOpacity
         }
+
+        if state.drawModeEnabled, !didPushCrosshair {
+            NSCursor.crosshair.push()
+            didPushCrosshair = true
+        } else if !state.drawModeEnabled, didPushCrosshair {
+            NSCursor.pop()
+            didPushCrosshair = false
+        }
+
         applyCursorPosition(NSEvent.mouseLocation)
         if state.drawModeEnabled { makeKeyPanelOnMainScreen() }
         redrawAnnotations()

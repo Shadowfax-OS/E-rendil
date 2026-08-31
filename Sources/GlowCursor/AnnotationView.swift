@@ -9,12 +9,8 @@ final class AnnotationView: NSView {
 
     var isDrawModeActive = false {
         didSet {
-            guard oldValue != isDrawModeActive else { return }
             window?.invalidateCursorRects(for: self)
-            if isDrawModeActive {
-                NSCursor.crosshair.push()
-            } else {
-                NSCursor.pop()
+            if !isDrawModeActive {
                 currentPoints = []
                 isRectMode = false
                 needsDisplay = true
