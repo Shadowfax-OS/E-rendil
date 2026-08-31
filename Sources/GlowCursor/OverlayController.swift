@@ -25,8 +25,13 @@ final class OverlayController: NSObject {
         tracker.delegate = self
     }
 
-    // Task 9 vervangt de nil-return door een echte AnnotationView.
-    func makeAnnotationView(screenID: ScreenID) -> NSView? { nil }
+    func makeAnnotationView(screenID: ScreenID) -> NSView? {
+        let view = AnnotationView(screenID: screenID, store: store, state: state)
+        view.onEscape = { [weak self] in
+            self?.state.drawModeEnabled = false
+        }
+        return view
+    }
 
     func rebuildPanels() {
         bundles.forEach { $0.panel.close() }
@@ -84,6 +89,7 @@ final class OverlayController: NSObject {
         for b in bundles {
             b.panel.ignoresMouseEvents = !state.drawModeEnabled
             b.panel.allowsKey = state.drawModeEnabled
+            (b.annotationView as? AnnotationView)?.isDrawModeActive = state.drawModeEnabled
             b.spotlightHost.isHidden = !state.spotlightEnabled
             b.ringHost.isHidden = !state.ringEnabled
             b.spotlightLayer.dimOpacity = state.dimOpacity
