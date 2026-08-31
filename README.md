@@ -16,6 +16,10 @@ Nul permissies nodig (geen Accessibility, geen Screen Recording).
 
 Kleur, ringgrootte en dim-sterkte stel je in via het menubar-icoon.
 
+De altijd betrouwbare manier om de tekenmodus te verlaten is `⌃⌥D` (of het
+menu-item **Tekenmodus**). ESC werkt zodra je in de tekenmodus een streek bent
+begonnen.
+
 ## Belangrijk: schermdeling
 
 De effecten zijn zichtbaar wanneer je je **volledige scherm** deelt (Teams,
@@ -29,3 +33,6 @@ van dit type.
 
 Resultaat: `build/GlowCursor.app`. Sleep naar /Applications.
 Ontwikkelen: `swift run` · Tests: `Scripts/test.sh`
+
+Let op: bare `swift test` bouwt wél maar draait **nul** tests op deze
+CLT-only setup (geen Xcode) — gebruik altijd `Scripts/test.sh`.

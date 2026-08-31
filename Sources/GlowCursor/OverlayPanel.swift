@@ -4,6 +4,9 @@ final class OverlayPanel: NSPanel {
     var allowsKey = false
     override var canBecomeKey: Bool { allowsKey }
 
+    // Nooit inkrimpen tot onder de menubalk-strook: spec §9.2 vraagt volledige dimming.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
+
     init(screen: NSScreen) {
         super.init(contentRect: screen.frame,
                    styleMask: [.borderless, .nonactivatingPanel],

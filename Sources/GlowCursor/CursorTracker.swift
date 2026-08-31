@@ -11,6 +11,8 @@ final class CursorTracker {
 
     var isRunning: Bool { displayLink != nil }
 
+    deinit { stop() }
+
     func start() {
         guard displayLink == nil, let screen = NSScreen.main else { return }
         let link = screen.displayLink(target: self, selector: #selector(tick(_:)))

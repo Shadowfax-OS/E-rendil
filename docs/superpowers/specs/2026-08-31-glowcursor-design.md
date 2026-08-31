@@ -56,7 +56,7 @@ Eén borderless, transparante `NSPanel` per `NSScreen`:
 2. **AnnotationView** — `NSView` die freehand-strokes en marker-rechthoeken tekent met `NSBezierPath`; marker-rechthoeken als translucente vulling (alpha ≈ 0,35).
 3. **RingLayer** — `CAShapeLayer`-cirkel die de cursor volgt.
 
-Zo blijft de ring zichtbaar binnen het spotlight-gat en dimmen annotaties mee buiten het gat.
+Zo blijft de ring zichtbaar binnen het spotlight-gat. Annotaties worden boven de dim-laag gerenderd en worden **niet** gedimd — een heldere annotatie over het gedimde scherm is het bedoelde gedrag.
 
 **Kritiek renderdetail:** alle per-frame updates (maskerpad, ringpositie) binnen `CATransaction` met `setDisableActions(true)`, anders animeert Core Animation elke update impliciet (0,25 s) en smeert het effect achter de cursor aan.
 
@@ -74,7 +74,7 @@ Zo blijft de ring zichtbaar binnen het spotlight-gat en dimmen annotaties mee bu
 |---|---|---|
 | `AppDelegate` | Wiring, `NSApp.setActivationPolicy(.accessory)`, luistert op `didChangeScreenParametersNotification` | handmatig |
 | `EffectsState` | Bron van waarheid: actieve effecten, kleur, ringdiameter, dim-opacity, tekengereedschap; persistentie via `UserDefaults`; observatie via delegates (geen externe deps) | unit |
-| `CursorTracker` | `CADisplayLink`-beheer, publiceert globale muispositie, pauzeert bij inactiviteit | deels |
+| `CursorTracker` | `CADisplayLink`-beheer, publiceert globale muispositie, pauzeert wanneer noch ring noch spotlight actief is | deels |
 | `OverlayController` | Beheert één `OverlayPanel` per scherm; herbouwt bij schermwijzigingen; schakelt `ignoresMouseEvents` bij tekenmodus | handmatig |
 | `OverlayPanel` | Het `NSPanel`-subtype zoals hierboven gespecificeerd | handmatig |
 | `SpotlightLayer` / `RingLayer` | CALayer-rendering zonder impliciete animaties | handmatig |

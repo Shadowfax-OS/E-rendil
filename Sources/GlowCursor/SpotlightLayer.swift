@@ -9,6 +9,11 @@ final class SpotlightLayer: CALayer {
         didSet { updateOpacity() }
     }
 
+    // maskShape is een sublaag en erft contentsScale niet; propageer expliciet (Retina).
+    override var contentsScale: CGFloat {
+        didSet { maskShape.contentsScale = contentsScale }
+    }
+
     override init() {
         super.init()
         backgroundColor = NSColor.black.cgColor
@@ -20,7 +25,7 @@ final class SpotlightLayer: CALayer {
     override init(layer: Any) { super.init(layer: layer) }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func updateOpacity() {
         CATransaction.begin()

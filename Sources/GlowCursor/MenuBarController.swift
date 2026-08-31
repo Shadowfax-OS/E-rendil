@@ -67,6 +67,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(dimItem)
 
         menu.addItem(.separator())
+        let undo = NSMenuItem(title: "Ongedaan maken  (⌃⌥Z)", action: #selector(undoStroke), keyEquivalent: "")
+        undo.target = self
+        menu.addItem(undo)
         let clear = NSMenuItem(title: "Wis annotaties  (⌃⌥C)", action: #selector(clearStrokes), keyEquivalent: "")
         clear.target = self
         menu.addItem(clear)
@@ -95,6 +98,12 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     @objc private func pickDim(_ sender: NSMenuItem) {
         if let n = sender.representedObject as? NSNumber { state.dimOpacity = CGFloat(n.doubleValue) }
+    }
+
+    @objc private func undoStroke() {
+        if store.undoLast() {
+            controller.redrawAnnotations()
+        }
     }
 
     @objc private func clearStrokes() {

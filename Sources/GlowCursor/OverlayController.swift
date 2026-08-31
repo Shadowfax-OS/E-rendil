@@ -8,7 +8,7 @@ final class OverlayController: NSObject {
         let spotlightHost: PassthroughHostView
         let ringLayer: RingLayer
         let ringHost: PassthroughHostView
-        let annotationView: NSView? // Task 9 maakt hier een AnnotationView van
+        let annotationView: AnnotationView
     }
 
     private let state: EffectsState
@@ -25,7 +25,7 @@ final class OverlayController: NSObject {
         tracker.delegate = self
     }
 
-    func makeAnnotationView(screenID: ScreenID) -> NSView? {
+    func makeAnnotationView(screenID: ScreenID) -> AnnotationView {
         let view = AnnotationView(screenID: screenID, store: store, state: state)
         view.onEscape = { [weak self] in
             self?.state.drawModeEnabled = false
@@ -34,6 +34,7 @@ final class OverlayController: NSObject {
     }
 
     func rebuildPanels() {
+        tracker.stop() // dwing herbinding van de display-link aan het huidige NSScreen.main af (schermwijziging/slaap)
         bundles.forEach { $0.panel.close() }
         bundles = []
         store.clearAll()
@@ -48,20 +49,20 @@ final class OverlayController: NSObject {
 
             let spotlightLayer = SpotlightLayer()
             spotlightLayer.frame = container.bounds
+            spotlightLayer.contentsScale = screen.backingScaleFactor
             let spotlightHost = PassthroughHostView(hosting: spotlightLayer)
             spotlightHost.frame = container.bounds
             spotlightHost.autoresizingMask = [.width, .height]
             container.addSubview(spotlightHost)
 
             let annotationView = makeAnnotationView(screenID: screenID)
-            if let annotationView {
-                annotationView.frame = container.bounds
-                annotationView.autoresizingMask = [.width, .height]
-                container.addSubview(annotationView)
-            }
+            annotationView.frame = container.bounds
+            annotationView.autoresizingMask = [.width, .height]
+            container.addSubview(annotationView)
 
             let ringLayer = RingLayer()
             ringLayer.frame = container.bounds
+            ringLayer.contentsScale = screen.backingScaleFactor
             let ringHost = PassthroughHostView(hosting: ringLayer)
             ringHost.frame = container.bounds
             ringHost.autoresizingMask = [.width, .height]
@@ -79,7 +80,7 @@ final class OverlayController: NSObject {
     }
 
     func redrawAnnotations() {
-        bundles.forEach { $0.annotationView?.needsDisplay = true }
+        bundles.forEach { $0.annotationView.needsDisplay = true }
     }
 
     private func syncFromState() {
@@ -89,25 +90,24 @@ final class OverlayController: NSObject {
         for b in bundles {
             b.panel.ignoresMouseEvents = !state.drawModeEnabled
             b.panel.allowsKey = state.drawModeEnabled
-            (b.annotationView as? AnnotationView)?.isDrawModeActive = state.drawModeEnabled
+            b.panel.acceptsMouseMovedEvents = state.drawModeEnabled
+            b.annotationView.isDrawModeActive = state.drawModeEnabled
             b.spotlightHost.isHidden = !state.spotlightEnabled
             b.ringHost.isHidden = !state.ringEnabled
             b.spotlightLayer.dimOpacity = state.dimOpacity
         }
         applyCursorPosition(NSEvent.mouseLocation)
-        if state.drawModeEnabled { makeKeyPanelUnderCursor() }
+        if state.drawModeEnabled { makeKeyPanelOnMainScreen() }
         redrawAnnotations()
     }
 
-    private func makeKeyPanelUnderCursor() {
-        let infos = bundles.map { CoordinateMapper.ScreenInfo(id: $0.screenID, frame: $0.panel.frame) }
-        guard let target = CoordinateMapper.screen(containing: NSEvent.mouseLocation, screens: infos),
-              let bundle = bundles.first(where: { $0.screenID == target.id })
-        else { return }
+    private func makeKeyPanelOnMainScreen() {
+        let mainNumber = (NSScreen.main?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)
+            .map { ScreenID(truncating: $0) }
+        let bundle = bundles.first(where: { $0.screenID == mainNumber }) ?? bundles.first
+        guard let bundle else { return }
         bundle.panel.makeKey()
-        if let view = bundle.annotationView {
-            bundle.panel.makeFirstResponder(view)
-        }
+        bundle.panel.makeFirstResponder(bundle.annotationView)
     }
 
     private func applyCursorPosition(_ global: CGPoint) {

@@ -11,7 +11,7 @@ final class RingLayer: CAShapeLayer {
     override init(layer: Any) { super.init(layer: layer) }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func update(center: CGPoint?, diameter: CGFloat, color: NSColor) {
         CATransaction.begin()
