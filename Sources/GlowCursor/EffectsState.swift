@@ -40,5 +40,9 @@ final class EffectsState {
 
     var color: NSColor { Self.color(named: colorName) }
 
+    /// True zodra minstens één effect (ring, spotlight of tekenmodus) actief is.
+    /// Stuurt of de bare-ESC paniekknop wordt afgevangen.
+    var anyEffectActive: Bool { ringEnabled || spotlightEnabled || drawModeEnabled }
+
     private func notify() { delegate?.effectsStateDidChange(self) }
 }

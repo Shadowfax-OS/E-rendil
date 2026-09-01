@@ -17,6 +17,10 @@ final class OverlayController: NSObject {
     private var bundles: [PanelBundle] = []
     private var didPushCrosshair = false
 
+    /// Gemeld telkens als de "is er een effect actief"-status kan zijn veranderd.
+    /// AppDelegate koppelt dit aan het dynamisch afvangen van de bare-ESC hotkey.
+    var onActiveEffectsChanged: ((Bool) -> Void)?
+
     init(state: EffectsState, store: StrokeStore, tracker: CursorTracker) {
         self.state = state
         self.store = store
@@ -29,7 +33,7 @@ final class OverlayController: NSObject {
     func makeAnnotationView(screenID: ScreenID) -> AnnotationView {
         let view = AnnotationView(screenID: screenID, store: store, state: state)
         view.onEscape = { [weak self] in
-            self?.state.drawModeEnabled = false
+            self?.resetAll()
         }
         return view
     }
@@ -84,6 +88,15 @@ final class OverlayController: NSObject {
         bundles.forEach { $0.annotationView.needsDisplay = true }
     }
 
+    /// Paniekknop: alle effecten uit en alle annotaties weg — terug naar de kale cursor.
+    func resetAll() {
+        state.ringEnabled = false
+        state.spotlightEnabled = false
+        state.drawModeEnabled = false
+        store.clearAll()
+        redrawAnnotations()
+    }
+
     private func syncFromState() {
         let needsTracking = state.ringEnabled || state.spotlightEnabled
         if needsTracking { tracker.start() } else { tracker.stop() }
@@ -109,6 +122,7 @@ final class OverlayController: NSObject {
         applyCursorPosition(NSEvent.mouseLocation)
         if state.drawModeEnabled { makeKeyPanelOnMainScreen() }
         redrawAnnotations()
+        onActiveEffectsChanged?(state.anyEffectActive)
     }
 
     private func makeKeyPanelOnMainScreen() {
@@ -120,18 +134,25 @@ final class OverlayController: NSObject {
         bundle.panel.makeFirstResponder(bundle.annotationView)
     }
 
+    /// Pure core: middelpunt voor de ring-/spotlight-laag. `nil` = laag verbergen —
+    /// óf het effect staat uit, óf de cursor zit op een ander scherm. Zonder de
+    /// `effectEnabled`-guard tekent een late `applyCursorPosition` de ring terug ná
+    /// het uitzetten (bug: cirkel blijft achter op de ESC-locatie).
+    static func layerCenter(cursorLocal: CGPoint?, effectEnabled: Bool) -> CGPoint? {
+        effectEnabled ? cursorLocal : nil
+    }
+
     private func applyCursorPosition(_ global: CGPoint) {
         let infos = bundles.map { CoordinateMapper.ScreenInfo(id: $0.screenID, frame: $0.panel.frame) }
         let target = CoordinateMapper.screen(containing: global, screens: infos)
         for b in bundles {
+            var local: CGPoint?
             if let target, b.screenID == target.id {
-                let local = CoordinateMapper.toLocal(global, in: target)
-                b.ringLayer.update(center: local, diameter: state.ringDiameter, color: state.color)
-                b.spotlightLayer.update(holeCenter: local)
-            } else {
-                b.ringLayer.update(center: nil, diameter: state.ringDiameter, color: state.color)
-                b.spotlightLayer.update(holeCenter: nil)
+                local = CoordinateMapper.toLocal(global, in: target)
             }
+            b.ringLayer.update(center: Self.layerCenter(cursorLocal: local, effectEnabled: state.ringEnabled),
+                               diameter: state.ringDiameter, color: state.color)
+            b.spotlightLayer.update(holeCenter: Self.layerCenter(cursorLocal: local, effectEnabled: state.spotlightEnabled))
         }
     }
 }

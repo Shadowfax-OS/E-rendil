@@ -1,10 +1,17 @@
 import Testing
 @testable import GlowCursor
 
-@Test func everyActionHasExactlyOneBinding() {
+/// Actions that are triggered by a chorded ⌃⌥ global hot key.
+private let chordedActions = HotKeyAction.allCases.filter { $0 != .resetAll }
+
+@Test func everyChordedActionHasExactlyOneBinding() {
     let actions = HotKeyManager.defaultBindings.map(\.action)
-    #expect(Set(actions).count == HotKeyAction.allCases.count)
-    #expect(actions.count == HotKeyAction.allCases.count)
+    #expect(Set(actions).count == chordedActions.count)
+    #expect(actions.count == chordedActions.count)
+}
+
+@Test func resetAllHasNoChordedBinding() {
+    #expect(!HotKeyManager.defaultBindings.map(\.action).contains(.resetAll))
 }
 
 @Test func allBindingsUseControlOption() {
@@ -28,9 +35,34 @@ import Testing
     #expect(HotKeyManager.action(forID: 1) == .toggleRing)
     #expect(HotKeyManager.action(forID: 5) == .clearStrokes)
     #expect(HotKeyManager.action(forID: 0) == nil)
-    #expect(HotKeyManager.action(forID: 6) == nil)
+    #expect(HotKeyManager.action(forID: 99) == nil)
 }
 
-@Test func bindingsOrderMatchesActionCases() {
-    #expect(HotKeyManager.defaultBindings.map(\.action) == HotKeyAction.allCases)
+@Test func bindingsOrderMatchesChordedActionCases() {
+    #expect(HotKeyManager.defaultBindings.map(\.action) == chordedActions)
+}
+
+@Test func escapeHotKeyMapsToResetAll() {
+    #expect(HotKeyManager.escapeKeyCode == 0x35) // kVK_Escape
+    #expect(HotKeyManager.action(forID: HotKeyManager.escapeHotKeyID) == .resetAll)
+}
+
+@Test func escapeHotKeyIDDoesNotCollideWithChordedBindings() {
+    let chordedIDs = 1...UInt32(HotKeyManager.defaultBindings.count)
+    #expect(!chordedIDs.contains(HotKeyManager.escapeHotKeyID))
+}
+
+@Test func setEscapeActiveTogglesAndIsIdempotent() {
+    let m = HotKeyManager()
+    #expect(m.isEscapeActive == false)
+
+    m.setEscapeActive(true)
+    #expect(m.isEscapeActive == true)
+    m.setEscapeActive(true) // geen dubbele registratie
+    #expect(m.isEscapeActive == true)
+
+    m.setEscapeActive(false)
+    #expect(m.isEscapeActive == false)
+    m.setEscapeActive(false) // geen dubbele deregistratie
+    #expect(m.isEscapeActive == false)
 }

@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 final class MenuBarController: NSObject, NSMenuDelegate {
     private let state: EffectsState
@@ -75,8 +76,18 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(clear)
 
         menu.addItem(.separator())
+        let login = NSMenuItem(title: "Start bij inloggen", action: #selector(toggleLoginItem), keyEquivalent: "")
+        login.target = self
+        login.state = Self.loginItemIsOn(SMAppService.mainApp.status) ? .on : .off
+        menu.addItem(login)
+
         let quit = NSMenuItem(title: "Stop GlowCursor", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
+    }
+
+    /// Alleen `.enabled` telt als "aan"; `.requiresApproval` wacht nog op de gebruiker.
+    static func loginItemIsOn(_ status: SMAppService.Status) -> Bool {
+        status == .enabled
     }
 
     private func toggleItem(_ title: String, on: Bool, action: Selector) -> NSMenuItem {
@@ -98,6 +109,23 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     @objc private func pickDim(_ sender: NSMenuItem) {
         if let n = sender.representedObject as? NSNumber { state.dimOpacity = CGFloat(n.doubleValue) }
+    }
+
+    @objc private func toggleLoginItem() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else {
+                try service.register()
+            }
+        } catch {
+            NSLog("GlowCursor: 'Start bij inloggen' wijzigen mislukt: \(error.localizedDescription)")
+        }
+        // Bij eerste keer registreren kan macOS goedkeuring vragen in Systeeminstellingen.
+        if SMAppService.mainApp.status == .requiresApproval {
+            SMAppService.openSystemSettingsLoginItems()
+        }
     }
 
     @objc private func undoStroke() {

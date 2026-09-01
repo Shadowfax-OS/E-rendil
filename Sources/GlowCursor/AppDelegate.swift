@@ -11,6 +11,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         controller = OverlayController(state: state, store: store, tracker: tracker)
         menuBar = MenuBarController(state: state, store: store, controller: controller)
+
+        // ESC alleen afvangen zolang er een effect actief is; verder laten we ESC met rust.
+        controller.onActiveEffectsChanged = { [weak self] active in
+            self?.hotKeys.setEscapeActive(active)
+        }
         controller.rebuildPanels()
 
         hotKeys.handler = { [weak self] action in
@@ -24,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .clearStrokes:
                 store.clearAll()
                 controller.redrawAnnotations()
+            case .resetAll:
+                controller.resetAll()
             }
         }
         hotKeys.registerAll()

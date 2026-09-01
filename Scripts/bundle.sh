@@ -12,4 +12,5 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 codesign --force -s - "$APP"
 
 echo "Klaar: $APP"
-echo "Sleep naar /Applications en voeg desgewenst toe aan Inlogonderdelen."
+echo "Sleep naar /Applications (of draai Scripts/install.sh) en zet in het menu"
+echo "'Start bij inloggen' aan."
