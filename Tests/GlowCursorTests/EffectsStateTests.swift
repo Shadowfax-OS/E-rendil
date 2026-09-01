@@ -49,3 +49,33 @@ private final class Spy: EffectsStateDelegate {
 @Test func unknownColorNameFallsBackToOrange() {
     #expect(EffectsState.color(named: "Paars???") == EffectsState.color(named: "Oranje"))
 }
+
+@Test func anyEffectActiveReflectsTheThreeToggles() {
+    let s = EffectsState(defaults: freshDefaults())
+    #expect(s.anyEffectActive == false)
+
+    s.ringEnabled = true
+    #expect(s.anyEffectActive == true)
+    s.ringEnabled = false
+    #expect(s.anyEffectActive == false)
+
+    s.spotlightEnabled = true
+    #expect(s.anyEffectActive == true)
+    s.spotlightEnabled = false
+
+    s.drawModeEnabled = true
+    #expect(s.anyEffectActive == true)
+
+    s.ringEnabled = true
+    s.spotlightEnabled = true
+    s.drawModeEnabled = false
+    #expect(s.anyEffectActive == true) // ring + spotlight nog aan
+}
+
+@Test func anyEffectActiveIgnoresPreferenceChanges() {
+    let s = EffectsState(defaults: freshDefaults())
+    s.ringDiameter = 90
+    s.colorName = "Blauw"
+    s.dimOpacity = 0.75
+    #expect(s.anyEffectActive == false)
+}

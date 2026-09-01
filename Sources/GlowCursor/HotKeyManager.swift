@@ -4,6 +4,9 @@ import os.log
 
 enum HotKeyAction: CaseIterable, Hashable, Equatable {
     case toggleRing, toggleSpotlight, toggleDrawMode, undoStroke, clearStrokes
+    /// Paniekknop: alle effecten uit en annotaties wissen. Niet chorded — via bare ESC,
+    /// en alleen afgevangen zolang er een effect actief is (zie `setEscapeActive`).
+    case resetAll
 }
 
 /// Manages global hot keys via Carbon for the GlowCursor application.
@@ -28,11 +31,28 @@ final class HotKeyManager {
         return all[Int(id) - 1]
     }
 
+    /// Virtuele keycode van de ESC-toets (kVK_Escape).
+    static let escapeKeyCode = UInt32(kVK_Escape)
+
+    /// Carbon-hotkey-id voor de bare-ESC paniekknop. Ligt bewust ná de chorded
+    /// ids (1...defaultBindings.count) zodat `action(forID:)` 'm op `.resetAll` mapt.
+    static var escapeHotKeyID: UInt32 {
+        UInt32(HotKeyAction.allCases.firstIndex(of: .resetAll)! + 1)
+    }
+
     var handler: ((HotKeyAction) -> Void)?
 
     private let log = Logger(subsystem: "local.glowcursor", category: "hotkeys")
     private var hotKeyRefs: [EventHotKeyRef?] = []
     private var eventHandlerRef: EventHandlerRef?
+
+    private static let signature = OSType(0x474C_4F57) // 'GLOW'
+
+    private var escapeHotKeyRef: EventHotKeyRef?
+
+    /// True zolang de bare-ESC paniekknop wordt afgevangen. Buiten deze modus
+    /// laten we ESC ongemoeid zodat andere apps 'm normaal krijgen.
+    private(set) var isEscapeActive = false
 
     private func logEventParameterError(_ status: OSStatus) {
         log.error("GetEventParameter mislukt (status \(status)); hotkey-data onbereikbaar")
@@ -68,13 +88,36 @@ final class HotKeyManager {
 
         for (index, binding) in Self.defaultBindings.enumerated() {
             var ref: EventHotKeyRef?
-            let hkID = EventHotKeyID(signature: OSType(0x474C_4F57) /* 'GLOW' */, id: UInt32(index + 1))
+            let hkID = EventHotKeyID(signature: Self.signature, id: UInt32(index + 1))
             let status = RegisterEventHotKey(binding.keyCode, binding.modifiers, hkID,
                                              GetApplicationEventTarget(), 0, &ref)
             if status != noErr {
                 log.error("Hotkey-registratie mislukt voor \(String(describing: binding.action)) (status \(status)); functie blijft via menu bereikbaar")
             }
             hotKeyRefs.append(ref)
+        }
+    }
+
+    /// Vang bare ESC wel/niet af. Idempotent: dubbel aan/uit is een no-op.
+    /// Aangestuurd door OverlayController zodra er een effect aan/uit gaat, zodat
+    /// ESC alleen "gestolen" wordt zolang GlowCursor daadwerkelijk iets toont.
+    func setEscapeActive(_ active: Bool) {
+        guard active != isEscapeActive else { return }
+        isEscapeActive = active
+        if active {
+            var ref: EventHotKeyRef?
+            let hkID = EventHotKeyID(signature: Self.signature, id: Self.escapeHotKeyID)
+            let status = RegisterEventHotKey(Self.escapeKeyCode, 0, hkID,
+                                             GetApplicationEventTarget(), 0, &ref)
+            if status != noErr {
+                log.error("ESC-hotkey-registratie mislukt (status \(status)); paniekknop blijft via menu bereikbaar")
+            }
+            escapeHotKeyRef = ref
+        } else {
+            if let ref = escapeHotKeyRef {
+                UnregisterEventHotKey(ref)
+            }
+            escapeHotKeyRef = nil
         }
     }
 }
